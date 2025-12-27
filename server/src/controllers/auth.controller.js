@@ -115,6 +115,81 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Input validation
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    const user = await prisma.user.findUnique({ 
+      where: { email: trimmedEmail },
+      select: {
+        id: true,
+        email: true,
+        isVerified: true,
+        isGuest: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found. Please register first." });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email is already verified" });
+    }
+
+    if (user.isGuest) {
+      return res.status(400).json({ message: "Guest users don't require OTP verification" });
+    }
+
+    // Generate new OTP
+    const otp = generateOTP();
+    const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await prisma.user.update({
+      where: { email: trimmedEmail },
+      data: {
+        otpCode: otp,
+        otpExpires: otpExpires
+      }
+    });
+
+    // Send email with error handling
+    try {
+      await transporter.sendMail({
+        from: `"Fishing Game" <${process.env.EMAIL_USER}>`,
+        to: trimmedEmail,
+        subject: "Your New OTP Verification Code",
+        text: `Your new OTP code is ${otp}. It expires in 5 minutes.`
+      });
+    } catch (emailErr) {
+      console.error("Failed to send OTP email:", emailErr);
+      return res.status(500).json({ 
+        message: "Failed to send OTP email. Please try again later."
+      });
+    }
+
+    res.json({ 
+      message: "New OTP sent to email", 
+      email: trimmedEmail,
+      expiresIn: "5 minutes"
+    });
+  } catch (err) {
+    console.error("Resend OTP error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -166,18 +241,38 @@ exports.login = async (req, res) => {
 
 exports.guestLogin = async (req, res) => {
   try {
+    // Create a guest user in database
+    const guestUser = await prisma.user.create({
+      data: {
+        isGuest: true,
+        gold: 0,
+        points: 0,
+        rodLevel: 1
+      },
+      select: {
+        id: true,
+        gold: true,
+        points: true,
+        rodLevel: true
+      }
+    });
+
     const token = jwt.sign(
-      { role: "guest" },
+      { 
+        id: guestUser.id,
+        role: "guest" 
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
     res.json({
       message: "Guest login success",
-      token
+      token,
+      user: guestUser
     });
   } catch (err) {
-    console.error(err);
+    console.error("Guest login error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
