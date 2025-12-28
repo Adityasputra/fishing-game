@@ -138,7 +138,7 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP code" });
     }
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { email: trimmedEmail },
       data: {
         isVerified: true,
@@ -147,7 +147,22 @@ exports.verifyOtp = async (req, res) => {
       }
     });
 
-    res.json({ message: "Email verified successfully" });
+    // Generate JWT token for auto-login
+    const token = jwt.sign(
+      { id: updatedUser.id, email: updatedUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ 
+      message: "Email verified successfully",
+      token,
+      user: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email
+      }
+    });
   } catch (err) {
     console.error("OTP verification error:", err);
     res.status(500).json({ message: "Internal server error" });
