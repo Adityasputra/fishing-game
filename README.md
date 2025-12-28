@@ -1,4 +1,4 @@
-# 🎣 Fishing Game
+# 🎣 Calm Waters - Fishing Game
 
 A real-time multiplayer fishing game built with React and Node.js, featuring an engaging balance-based fishing mechanic, upgradeable equipment, and live leaderboards.
 
