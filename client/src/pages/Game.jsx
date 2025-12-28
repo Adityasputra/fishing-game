@@ -1,13 +1,31 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import api from "../api/api";
 import HoldButton from "../components/HoldButton";
 import Leaderboard from "../components/Leaderboard";
+import UpgradeButton from "../components/UpgradeButton";
 
 export default function Game() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [lastCatch, setLastCatch] = useState(null);
   const [fishing, setFishing] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const handleUpgradeSuccess = (updatedData) => {
+    setUser(prev => ({
+      ...prev,
+      gold: updatedData.gold,
+      rodLevel: updatedData.rodLevel
+    }));
+  };
 
   const fish = async () => {
     if (fishing) return;
@@ -152,10 +170,25 @@ export default function Game() {
           
           {/* Panel Header */}
           <div className="bg-gradient-to-r from-teal-500 to-cyan-500 rounded-2xl p-5 shadow-xl">
-            <h2 className="text-3xl font-bold text-white text-center flex items-center justify-center gap-3">
-              <span className="text-4xl">🎣</span>
-              <span>Angler's Hub</span>
-            </h2>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex-1"></div>
+              <h2 className="text-3xl font-bold text-white flex items-center gap-3">
+                <span className="text-4xl">🎣</span>
+                <span>Angler's Hub</span>
+              </h2>
+              <div className="flex-1 flex justify-end">
+                <button
+                  onClick={handleLogout}
+                  className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all border border-white/30 hover:border-white/50 flex items-center gap-2"
+                  title="Logout"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Player Stats Section */}
@@ -219,35 +252,15 @@ export default function Game() {
               <span>Upgrades</span>
             </h3>
             
-            <div className="space-y-4">
-              {/* Rod Upgrade */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-300 hover:border-purple-400 transition-all">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="text-4xl">🔧</div>
-                  <div className="flex-1">
-                    <p className="font-bold text-purple-900 text-lg">Better Fishing Rod</p>
-                    <p className="text-sm text-purple-600 mt-1">Catch rarer and more valuable fish</p>
-                  </div>
-                </div>
-                <button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-                  Upgrade • 200 💰
-                </button>
+            {user ? (
+              <UpgradeButton user={user} onUpgradeSuccess={handleUpgradeSuccess} />
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                <div className="text-6xl mb-4 opacity-50">🔧</div>
+                <p className="font-semibold text-lg">Start Fishing!</p>
+                <p className="text-sm mt-2">Upgrades will appear here</p>
               </div>
-
-              {/* Bait Upgrade */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-300 hover:border-green-400 transition-all">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="text-4xl">🪱</div>
-                  <div className="flex-1">
-                    <p className="font-bold text-green-900 text-lg">Premium Bait</p>
-                    <p className="text-sm text-green-600 mt-1">Attract fish faster</p>
-                  </div>
-                </div>
-                <button className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-                  Buy • 50 💰
-                </button>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Leaderboard Section */}

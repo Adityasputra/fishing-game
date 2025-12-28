@@ -1,14 +1,24 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function Home() {
     const navigate = useNavigate();
+    const [showGuestWarning, setShowGuestWarning] = useState(false);
 
     const handleEmailLogin = () => {
         navigate('/login');
     };
 
     const handleGuestLogin = () => {
+        setShowGuestWarning(true);
+    };
+
+    const confirmGuestLogin = () => {
         navigate('/guest');
+    };
+
+    const cancelGuestLogin = () => {
+        setShowGuestWarning(false);
     };
 
     return (
@@ -95,6 +105,56 @@ export default function Home() {
                     🌊 Find your perfect catch in calm waters
                 </p>
             </div>
+
+            {/* Guest Login Warning Modal */}
+            {showGuestWarning && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border-4 border-amber-400 animate-fade-in">
+                        <div className="text-center mb-6">
+                            <div className="text-7xl mb-4 animate-bounce">⚠️</div>
+                            <h3 className="text-2xl font-bold text-amber-800 mb-2">
+                                Guest Mode Warning
+                            </h3>
+                        </div>
+
+                        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 mb-6">
+                            <ul className="space-y-3 text-amber-900">
+                                <li className="flex items-start gap-3">
+                                    <span className="text-xl flex-shrink-0">❌</span>
+                                    <span className="text-sm font-medium">Your progress will NOT be saved</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-xl flex-shrink-0">❌</span>
+                                    <span className="text-sm font-medium">All catches and gold will be lost</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-xl flex-shrink-0">❌</span>
+                                    <span className="text-sm font-medium">You won't appear on the leaderboard</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <span className="text-xl flex-shrink-0">✅</span>
+                                    <span className="text-sm font-medium">Create an account to save your progress!</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={cancelGuestLogin}
+                                className="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-semibold py-4 px-6 rounded-xl transition-all transform hover:scale-105"
+                            >
+                                Sign Up Instead
+                            </button>
+                            <button
+                                onClick={confirmGuestLogin}
+                                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-4 px-6 rounded-xl transition-all"
+                            >
+                                Continue as Guest
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
