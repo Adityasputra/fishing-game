@@ -6,13 +6,26 @@ const rodChances = {
   5: { normal: 60, rare: 10, epic: 5 }
 };
 
-exports.getFish = (rodLevel) => {
+// Timing quality multipliers
+const qualityBonus = {
+  perfect: 1.5,  // 50% better odds for rare/epic
+  good: 1.25,    // 25% better odds
+  normal: 1.0    // No bonus
+};
+
+exports.getFish = (rodLevel, quality = 'normal') => {
   const chance = rodChances[rodLevel];
+  const bonus = qualityBonus[quality] || 1.0;
+  
+  // Apply bonus to rare and epic chances
+  const epicChance = chance.epic * bonus;
+  const rareChance = chance.rare * bonus;
+  
   const roll = Math.random() * 100;
 
-  if (roll < chance.epic) return "epic";
-  if (roll < chance.epic + chance.rare) return "rare";
-  if (roll < chance.epic + chance.rare + chance.normal) return "normal";
+  if (roll < epicChance) return "epic";
+  if (roll < epicChance + rareChance) return "rare";
+  if (roll < epicChance + rareChance + chance.normal) return "normal";
 
   return null;
 };

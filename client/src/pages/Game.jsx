@@ -47,13 +47,13 @@ export default function Game() {
     }));
   };
 
-  const fish = async () => {
+  const fish = async (quality = 'normal') => {
     if (fishing) return;
     
     try {
       setFishing(true);
       setLastCatch(null);
-      const res = await api.post("/game/fish");
+      const res = await api.post("/game/fish", { quality });
       
       if (res.data.success) {
         setUser(res.data.user);

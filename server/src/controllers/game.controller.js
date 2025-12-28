@@ -53,6 +53,11 @@ exports.fish = async (req, res) => {
     }
 
     const userId = req.user.id;
+    
+    // Get timing quality from request body (perfect, good, normal)
+    const { quality = 'normal' } = req.body;
+    const validQualities = ['perfect', 'good', 'normal'];
+    const timingQuality = validQualities.includes(quality) ? quality : 'normal';
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -79,7 +84,7 @@ exports.fish = async (req, res) => {
       return res.status(400).json({ message: "Invalid rod level" });
     }
 
-    const fish = getFish(user.rodLevel);
+    const fish = getFish(user.rodLevel, timingQuality);
 
     // No catch this time
     if (!fish) {
