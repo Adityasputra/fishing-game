@@ -143,7 +143,9 @@ exports.verifyOtp = async (req, res) => {
       data: {
         isVerified: true,
         otpCode: null,
-        otpExpires: null
+        otpExpires: null,
+        otpResendCount: 0,
+        otpLastResent: null
       }
     });
 
@@ -190,7 +192,9 @@ exports.resendOtp = async (req, res) => {
         id: true,
         email: true,
         isVerified: true,
-        isGuest: true
+        isGuest: true,
+        otpResendCount: true,
+        otpLastResent: true
       }
     });
 
@@ -206,6 +210,41 @@ exports.resendOtp = async (req, res) => {
       return res.status(400).json({ message: "Guest users don't require OTP verification" });
     }
 
+    // Rate limiting - max 5 resends per hour
+    const MAX_RESENDS = 5;
+    const RESEND_COOLDOWN = 60 * 1000; // 60 seconds cooldown between resends
+    const RESEND_WINDOW = 60 * 60 * 1000; // 1 hour window
+    
+    const now = new Date();
+    
+    // Check cooldown period (60 seconds between resends)
+    if (user.otpLastResent) {
+      const timeSinceLastResend = now - user.otpLastResent;
+      if (timeSinceLastResend < RESEND_COOLDOWN) {
+        const remainingSeconds = Math.ceil((RESEND_COOLDOWN - timeSinceLastResend) / 1000);
+        return res.status(429).json({ 
+          message: `Please wait ${remainingSeconds} seconds before requesting another OTP`,
+          remainingSeconds
+        });
+      }
+      
+      // Reset counter if more than 1 hour has passed
+      if (timeSinceLastResend > RESEND_WINDOW) {
+        await prisma.user.update({
+          where: { email: trimmedEmail },
+          data: { otpResendCount: 0 }
+        });
+      }
+    }
+    
+    // Check max resend limit
+    if (user.otpResendCount >= MAX_RESENDS) {
+      return res.status(429).json({ 
+        message: "Maximum OTP resend limit reached. Please try again in 1 hour or contact support.",
+        error: "max_resends_reached"
+      });
+    }
+
     // Generate new OTP
     const otp = generateOTP();
     const otpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
@@ -214,7 +253,9 @@ exports.resendOtp = async (req, res) => {
       where: { email: trimmedEmail },
       data: {
         otpCode: otp,
-        otpExpires: otpExpires
+        otpExpires: otpExpires,
+        otpResendCount: { increment: 1 },
+        otpLastResent: now
       }
     });
 

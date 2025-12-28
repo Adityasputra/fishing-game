@@ -17,6 +17,8 @@ model User {
 
   otpCode    String?
   otpExpires DateTime?
+  otpResendCount Int @default(0)
+  otpLastResent  DateTime?
 
   fishingSessions FishingSession[]
 

@@ -12,12 +12,21 @@ export default function VerifyOTP() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   const email = location.state?.email;
 
   useEffect(() => {
     if (!email) navigate("/register");
   }, [email, navigate]);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cooldown]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,14 +45,24 @@ export default function VerifyOTP() {
   };
 
   const handleResend = async () => {
+    if (cooldown > 0) return;
+    
     setError("");
     setResending(true);
 
     try {
-      await api.post("/auth/resend-otp", { email });
-      alert("OTP sent! Check your email.");
+      const res = await api.post("/auth/resend-otp", { email });
+      setCooldown(60); // Set 60 second cooldown
+      alert("✓ New OTP sent! Check your email.");
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to resend OTP.");
+      const errorMessage = err.response?.data?.message || "Failed to resend OTP.";
+      const remainingSeconds = err.response?.data?.remainingSeconds;
+      
+      if (remainingSeconds) {
+        setCooldown(remainingSeconds);
+      }
+      
+      setError(errorMessage);
     } finally {
       setResending(false);
     }
@@ -109,11 +128,25 @@ export default function VerifyOTP() {
             <p className="text-xs text-teal-700 mb-1">Didn’t receive it?</p>
             <button
               onClick={handleResend}
-              disabled={resending}
-              className="text-xs font-semibold text-teal-600 hover:text-teal-700 underline disabled:opacity-50"
+              disabled={resending || cooldown > 0}
+              className="text-xs font-semibold text-teal-600 hover:text-teal-700 underline disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {resending ? "Sending..." : "Resend Code"}
+              {resending 
+                ? "Sending..." 
+                : cooldown > 0 
+                ? `Resend in ${cooldown}s` 
+                : "Resend Code"}
             </button>
+            {cooldown > 0 && (
+              <div className="mt-2">
+                <div className="h-1 bg-teal-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-teal-500 transition-all duration-1000 ease-linear"
+                    style={{ width: `${((60 - cooldown) / 60) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
