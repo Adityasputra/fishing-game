@@ -6,6 +6,8 @@ import HoldButton from "../components/HoldButton";
 import Leaderboard from "../components/Leaderboard";
 import UpgradeButton from "../components/UpgradeButton";
 import ConvertToUser from "../components/ConvertToUser";
+import Logout from "../components/Logout";
+import Instructions from "../components/Instructions";
 
 export default function Game() {
   const navigate = useNavigate();
@@ -15,18 +17,20 @@ export default function Game() {
   const [lastCatch, setLastCatch] = useState(null);
   const [fishing, setFishing] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
-  // Fetch user profile on mount
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await api.get("/game/profile");
         setUser(res.data.user);
       } catch (err) {
-        console.error("Failed to fetch profile:", err);
+        if (import.meta.env.MODE === "development") {
+          console.error("Failed to fetch profile:", err);
+        }
         if (err.response?.status === 401) {
           logout();
-          navigate('/');
+          navigate("/");
         }
       }
     };
@@ -36,40 +40,46 @@ export default function Game() {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
   const handleUpgradeSuccess = (updatedData) => {
-    setUser(prev => ({
+    setUser((prev) => ({
       ...prev,
       gold: updatedData.gold,
-      rodLevel: updatedData.rodLevel
+      rodLevel: updatedData.rodLevel,
     }));
   };
 
-  const fish = async (quality = 'normal') => {
+  const fish = async (quality = "normal") => {
     if (fishing) return;
-    
+
     try {
       setFishing(true);
       setLastCatch(null);
       const res = await api.post("/game/fish", { quality });
-      
+
       if (res.data.success) {
-        setUser(res.data.user);
+        setUser((prev) => ({
+          ...prev,
+          ...res.data.user,
+        }));
         setLastCatch({
           type: "success",
           rarity: res.data.fish,
-          reward: res.data.reward
+          reward: res.data.reward,
         });
       } else {
-        setUser(res.data.user);
+        setUser((prev) => ({
+          ...prev,
+          ...res.data.user,
+        }));
         setLastCatch({
           type: "miss",
-          message: res.data.message
+          message: res.data.message,
         });
       }
-      
+
       setTimeout(() => setLastCatch(null), 3000);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fish");
@@ -86,9 +96,9 @@ export default function Game() {
             <div className="text-6xl mb-4">❌</div>
             <h2 className="text-2xl font-bold text-red-600 mb-3">Oops!</h2>
             <p className="text-gray-700 mb-6">{error}</p>
-            <button 
+            <button
               onClick={() => setError(null)}
-              className="bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold transition-all"
+              className="bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-xl font-semibold"
             >
               Try Again
             </button>
@@ -100,218 +110,210 @@ export default function Game() {
 
   return (
     <div className="w-screen h-screen flex overflow-hidden bg-gradient-to-b from-sky-300 via-cyan-200 to-teal-300">
-      
-      {/* ===== LEFT SECTION - GAMEPLAY AREA (68%) ===== */}
-      <div className="w-[68%] h-full relative flex flex-col">
-        
-        {/* Sky gradient with sun glow */}
-        <div className="absolute inset-0 bg-gradient-to-b from-amber-200/40 via-sky-200/50 to-transparent pointer-events-none"></div>
-        
-        {/* Sun */}
-        <div className="absolute top-16 right-16 w-24 h-24 bg-yellow-300 rounded-full blur-2xl opacity-60 animate-pulse"></div>
-        
-        {/* Water surface - animated */}
-        <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-gradient-to-b from-cyan-400/70 to-teal-700/90 overflow-hidden">
-          {/* Water waves animation */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute w-full h-32 bg-gradient-to-r from-transparent via-white to-transparent -skew-y-3 animate-pulse"></div>
+      <div className="w-[70%] h-full relative flex flex-col overflow-hidden">
+        <div className="relative z-20 px-6 pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-teal-500 to-cyan-600 p-2 rounded-xl shadow-lg">
+                <span className="text-2xl">🎣</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white drop-shadow-lg">
+                  Calm Waters
+                </h1>
+                {user && (
+                  <p className="text-sm text-white/90 font-medium">
+                    Welcome, {user.username || user.email}
+                  </p>
+                )}
+              </div>
+            </div>
+            {user && (
+              <Logout
+                user={user}
+                onLogout={handleLogout}
+                onShowConvert={() => setShowConvertModal(true)}
+              />
+            )}
           </div>
-          {/* Water depth gradient */}
-          <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-teal-900/70 to-transparent"></div>
         </div>
 
-        {/* Floating bubbles */}
-        <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-white/50 rounded-full blur-sm animate-ping"></div>
-        <div className="absolute top-1/3 right-1/3 w-3 h-3 bg-white/40 rounded-full blur-sm animate-ping" style={{ animationDelay: '0.5s' }}></div>
-        <div className="absolute bottom-1/3 left-1/2 w-5 h-5 bg-white/30 rounded-full blur-sm animate-ping" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/3 w-2 h-2 bg-white/60 rounded-full blur-sm animate-ping" style={{ animationDelay: '1.5s' }}></div>
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/background/background.png')" }}
+        />
 
-        {/* Welcome message overlay */}
-        {!user && (
-          <div className="relative z-10 mt-16 mx-auto animate-fade-in">
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl px-10 py-5 shadow-2xl border-2 border-teal-300">
-              <p className="text-teal-700 font-bold text-xl text-center">
-                🎣 Hold the button below to cast your line!
-              </p>
-            </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10 pointer-events-none" />
+
+        <div className="relative z-10 flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <HoldButton onSuccess={fish} disabled={fishing} />
           </div>
-        )}
+        </div>
 
-        {/* Catch result notification */}
+        <div className="absolute bottom-[-80px] right-0 z-2 pointer-events-none">
+          <img
+            src="/rod.png"
+            alt="Fishing Rod"
+            className="w-[480px] h-auto object-contain"
+            style={{ animation: "fishing-bob 3s infinite ease-in-out" }}
+          />
+        </div>
+
+        {/* Instructions Icon */}
+        <div className="absolute bottom-4 left-4 z-20">
+          {showInstructions && (
+            <div className="absolute bottom-12 left-0 mb-1">
+              <Instructions />
+            </div>
+          )}
+
+          <button
+            onClick={() => setShowInstructions(!showInstructions)}
+            className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white p-2 rounded-full shadow-xl border-2 border-white/30"
+            title="Instructions"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Last Catch Message */}
         {lastCatch && (
-          <div className="relative z-10 mt-16 mx-auto">
-            <div className={`backdrop-blur-xl rounded-3xl px-10 py-7 shadow-2xl border-3 transform scale-110 transition-all ${
-              lastCatch.type === "success" 
-                ? "bg-emerald-100/95 border-emerald-500" 
-                : "bg-amber-100/95 border-amber-500"
-            }`}>
+          <div className="absolute bottom-4 left-20 z-20 animate-fade-in">
+            <div
+              className={`backdrop-blur-xl rounded-xl px-4 py-3 shadow-2xl border-2 ${
+                lastCatch.type === "success"
+                  ? "bg-emerald-50/98 border-emerald-400"
+                  : "bg-amber-50/98 border-amber-400"
+              }`}
+            >
               {lastCatch.type === "success" ? (
-                <div className="text-center">
-                  <div className="text-6xl mb-3 animate-bounce">🐟</div>
-                  <p className="text-emerald-900 font-bold text-2xl mb-3 capitalize">
-                    {lastCatch.rarity} Fish Caught!
-                  </p>
-                  <div className="flex gap-6 justify-center text-emerald-800 text-lg font-semibold">
-                    <span>💰 +{lastCatch.reward.gold}</span>
-                    <span>⭐ +{lastCatch.reward.points}</span>
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">🐟</div>
+                  <div>
+                    <p className="text-emerald-900 font-bold text-sm capitalize">
+                      {lastCatch.rarity} Fish!
+                    </p>
+                    <div className="flex gap-2 text-xs text-emerald-800 font-semibold">
+                      <span>💰 +{lastCatch.reward.gold}</span>
+                      <span>⭐ +{lastCatch.reward.points}</span>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-center">
-                  <div className="text-5xl mb-3">😔</div>
-                  <p className="text-amber-900 font-bold text-xl">{lastCatch.message}</p>
+                <div className="flex items-center gap-2">
+                  <div className="text-xl">😔</div>
+                  <p className="text-amber-900 font-bold text-sm">
+                    {lastCatch.message}
+                  </p>
                 </div>
               )}
             </div>
           </div>
         )}
-
-        {/* Central fishing interaction area */}
-        <div className="relative z-10 flex-1 flex items-center justify-center">
-          <div className="text-center transform hover:scale-105 transition-transform">
-            <HoldButton onSuccess={fish} disabled={fishing} />
-          </div>
-        </div>
-
-        {/* Bottom status bar */}
-        <div className="relative z-10 pb-10 text-center">
-          <div className="inline-block bg-teal-800/60 backdrop-blur-md px-8 py-3 rounded-full shadow-lg">
-            <p className="text-white font-semibold text-base tracking-wide">
-              {fishing ? "🎣 Line in the water..." : "🌊 Calm waters • Perfect for fishing"}
-            </p>
-          </div>
-        </div>
       </div>
 
-      {/* ===== RIGHT SECTION - PLAYER PANEL (32%) ===== */}
-      <div className="w-[32%] h-full bg-gradient-to-br from-slate-50 via-teal-50 to-cyan-50 border-l-4 border-teal-500 shadow-2xl overflow-y-auto">
-        
-        <div className="p-6 space-y-6">
-          
-          {/* Panel Header */}
-          <div className="bg-gradient-to-r from-teal-500 to-cyan-500 rounded-2xl p-5 shadow-xl">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex-1"></div>
-              <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                <span className="text-4xl">🎣</span>
-                <span>Angler's Hub</span>
-              </h2>
-              <div className="flex-1 flex justify-end gap-2">
-                {user && user.isGuest && (
-                  <button
-                    onClick={() => setShowConvertModal(true)}
-                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all border border-amber-400 hover:border-amber-500 flex items-center gap-2 shadow-lg"
-                    title="Save your progress"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                    </svg>
-                    <span>Save</span>
-                  </button>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all border border-white/30 hover:border-white/50 flex items-center gap-2"
-                  title="Logout"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span>Logout</span>
-                </button>
+      <div className="w-[30%] h-full bg-gradient-to-br from-slate-50 via-teal-50 to-cyan-50 border-l-4 border-teal-500 shadow-2xl flex flex-col overflow-hidden">
+        <div className="flex-1 grid grid-rows-[auto_1fr] gap-4 p-4 overflow-hidden">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-teal-200">
+              <h3 className="text-xs font-bold text-teal-900 mb-2 flex items-center gap-1.5 border-b border-teal-100 pb-1.5">
+                Your Stats
+              </h3>
+
+              {user ? (
+                <div className="space-y-1.5">
+                  <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg p-2 border border-yellow-300/50 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">💰</span>
+                      <div className="flex-1">
+                        <p className="text-[9px] text-amber-600 font-semibold uppercase">
+                          Gold
+                        </p>
+                        <p className="text-sm font-bold text-amber-900">
+                          {user.gold.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-2 border border-blue-300/50 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">⭐</span>
+                      <div className="flex-1">
+                        <p className="text-[9px] text-blue-600 font-semibold uppercase">
+                          Points
+                        </p>
+                        <p className="text-sm font-bold text-blue-900">
+                          {user.points.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg p-2 border border-emerald-300/50 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🎣</span>
+                      <div className="flex-1">
+                        <p className="text-[9px] text-emerald-600 font-semibold uppercase">
+                          Rod Level
+                        </p>
+                        <p className="text-sm font-bold text-emerald-900">
+                          Level {user.rodLevel}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4 text-gray-400">
+                  <div className="text-3xl mb-1.5 opacity-40">🎣</div>
+                  <p className="font-semibold text-xs">Loading...</p>
+                </div>
+              )}
+            </div>
+
+            {user ? (
+              <UpgradeButton
+                user={user}
+                onUpgradeSuccess={handleUpgradeSuccess}
+              />
+            ) : (
+              <div className="text-center py-4 text-gray-400">
+                <div className="text-3xl mb-1.5 opacity-40">🔧</div>
+                <p className="font-semibold text-xs">Loading...</p>
               </div>
+            )}
+          </div>
+
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-lg border border-orange-200 flex flex-col min-h-0">
+            <h3 className="text-xs font-bold text-orange-900 mb-2 flex items-center gap-1.5 border-b border-orange-100 pb-1.5">
+              <span className="text-sm">🏆</span>
+              Top Anglers
+            </h3>
+            <div className="flex-1 overflow-hidden">
+              <Leaderboard />
             </div>
           </div>
-
-          {/* Player Stats Section */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-2 border-teal-300">
-            <h3 className="text-xl font-bold text-teal-800 mb-5 flex items-center gap-2 border-b-2 border-teal-200 pb-3">
-              <span className="text-2xl">📊</span>
-              <span>Your Progress</span>
-            </h3>
-            
-            {user ? (
-              <div className="space-y-4">
-                {/* Gold */}
-                <div className="flex items-center justify-between bg-gradient-to-r from-yellow-100 to-amber-100 rounded-xl p-5 border-2 border-yellow-400 shadow-md hover:shadow-lg transition-shadow">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">💰</span>
-                    <div>
-                      <p className="text-xs text-amber-600 font-medium uppercase tracking-wide">Gold</p>
-                      <p className="text-2xl font-bold text-amber-800">{user.gold}</p>
-                    </div>
-                  </div>
-                  <div className="text-amber-700 font-bold text-sm">COINS</div>
-                </div>
-                
-                {/* Points */}
-                <div className="flex items-center justify-between bg-gradient-to-r from-blue-100 to-cyan-100 rounded-xl p-5 border-2 border-blue-400 shadow-md hover:shadow-lg transition-shadow">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">⭐</span>
-                    <div>
-                      <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Points</p>
-                      <p className="text-2xl font-bold text-blue-800">{user.points}</p>
-                    </div>
-                  </div>
-                  <div className="text-blue-700 font-bold text-sm">XP</div>
-                </div>
-                
-                {/* Rod Level */}
-                <div className="flex items-center justify-between bg-gradient-to-r from-emerald-100 to-teal-100 rounded-xl p-5 border-2 border-emerald-400 shadow-md hover:shadow-lg transition-shadow">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">🎣</span>
-                    <div>
-                      <p className="text-xs text-emerald-600 font-medium uppercase tracking-wide">Rod Level</p>
-                      <p className="text-2xl font-bold text-emerald-800">Level {user.rodLevel}</p>
-                    </div>
-                  </div>
-                  <div className="text-emerald-700 font-bold text-sm">GEAR</div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <div className="text-6xl mb-4 opacity-50">🎣</div>
-                <p className="font-semibold text-lg">Start Fishing!</p>
-                <p className="text-sm mt-2">Your stats will appear here</p>
-              </div>
-            )}
-          </div>
-
-          {/* Upgrades Section */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-2 border-purple-300">
-            <h3 className="text-xl font-bold text-purple-800 mb-5 flex items-center gap-2 border-b-2 border-purple-200 pb-3">
-              <span className="text-2xl">⚡</span>
-              <span>Upgrades</span>
-            </h3>
-            
-            {user ? (
-              <UpgradeButton user={user} onUpgradeSuccess={handleUpgradeSuccess} />
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <div className="text-6xl mb-4 opacity-50">🔧</div>
-                <p className="font-semibold text-lg">Start Fishing!</p>
-                <p className="text-sm mt-2">Upgrades will appear here</p>
-              </div>
-            )}
-          </div>
-
-          {/* Leaderboard Section */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-2 border-orange-300">
-            <h3 className="text-xl font-bold text-orange-800 mb-5 flex items-center gap-2 border-b-2 border-orange-200 pb-3">
-              <span className="text-2xl">🏆</span>
-              <span>Top Anglers</span>
-            </h3>
-            <Leaderboard />
-          </div>
-
         </div>
       </div>
 
-      {/* Convert Guest to User Modal */}
       {showConvertModal && user && (
-        <ConvertToUser 
-          currentUser={user} 
-          onClose={() => setShowConvertModal(false)} 
+        <ConvertToUser
+          currentUser={user}
+          onClose={() => setShowConvertModal(false)}
         />
       )}
     </div>

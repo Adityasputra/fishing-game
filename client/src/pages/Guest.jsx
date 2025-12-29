@@ -15,7 +15,9 @@ export default function Guest() {
         login(response.data.token);
         navigate('/game');
       } catch (err) {
-        console.error('Guest login failed:', err);
+        if (import.meta.env.MODE === 'development') {
+          console.error('Guest login failed:', err);
+        }
         setError(err.response?.data?.message || 'Failed to login as guest. Please try again.');
       }
     };

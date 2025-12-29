@@ -1,0 +1,8 @@
+# Netlify/Vercel Headers Configuration
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Content-Security-Policy: default-src 'self'; connect-src 'self' http://localhost:3000 ws://localhost:3000 https://your-api-domain.com wss://your-api-domain.com; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:;
