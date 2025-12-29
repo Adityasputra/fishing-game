@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 
-export default function HoldButton({ onSuccess, disabled = false }) {
+export default function HoldButton({ onSuccess, disabled = false, audio }) {
   const [holding, setHolding] = useState(false);
   const [progress, setProgress] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
@@ -31,13 +31,6 @@ export default function HoldButton({ onSuccess, disabled = false }) {
     }
   }, []);
 
-  // Play sound effect placeholder
-  const playSound = useCallback((_type) => {
-    // You can add actual audio files here
-    // const audio = new Audio(`/sounds/${type}.mp3`);
-    // audio.play();
-  }, []);
-
   // Main game loop
   useEffect(() => {
     if (!gameActive.current) return;
@@ -60,7 +53,7 @@ export default function HoldButton({ onSuccess, disabled = false }) {
         // Check if too high (fish escapes)
         if (newProgress >= dangerZone && !failed) {
           vibrate(300);
-          playSound("fail");
+          if (audio) audio.stopReel();
           setFailed(true);
           gameActive.current = false;
           setTimeout(() => {
@@ -92,7 +85,7 @@ export default function HoldButton({ onSuccess, disabled = false }) {
           // Check if released too long (fish escapes)
           if (newReleaseTime >= maxReleaseTime && !failed && !success) {
             vibrate(300);
-            playSound("fail");
+            if (audio) audio.stopReel();
             setFailed(true);
             gameActive.current = false;
             setTimeout(() => {
@@ -120,7 +113,7 @@ export default function HoldButton({ onSuccess, disabled = false }) {
         // Success! Stayed in zone long enough
         if (newTime >= timeNeeded && !success && !failed) {
           vibrate([100, 50, 100, 50, 100]);
-          playSound("success");
+          if (audio) audio.stopReel();
           setSuccess(true);
           gameActive.current = false;
 
@@ -155,7 +148,6 @@ export default function HoldButton({ onSuccess, disabled = false }) {
     success,
     onSuccess,
     vibrate,
-    playSound,
     dangerZone,
     safeZoneStart,
     safeZoneEnd,
@@ -163,6 +155,7 @@ export default function HoldButton({ onSuccess, disabled = false }) {
     maxHoldTime,
     maxReleaseTime,
     hasStarted,
+    audio,
   ]);
 
   const handleMouseDown = () => {
@@ -172,12 +165,14 @@ export default function HoldButton({ onSuccess, disabled = false }) {
       setHasStarted(true);
       setProgress(50); // Start at middle
       vibrate(50);
-      playSound("start");
+      if (audio) audio.playClick();
     }
+    if (audio) audio.playReel();
     setHolding(true);
   };
 
   const handleRelease = () => {
+    if (audio) audio.stopReel();
     setHolding(false);
   };
 

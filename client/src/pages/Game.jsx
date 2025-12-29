@@ -8,10 +8,12 @@ import UpgradeButton from "../components/UpgradeButton";
 import ConvertToUser from "../components/ConvertToUser";
 import Logout from "../components/Logout";
 import Instructions from "../components/Instructions";
+import { useAudio } from "../audio/useAudio";
 
 export default function Game() {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const audio = useAudio();
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [lastCatch, setLastCatch] = useState(null);
@@ -38,12 +40,30 @@ export default function Game() {
     fetchProfile();
   }, []);
 
+  // Start ambient sounds when component mounts (after user interaction)
+  useEffect(() => {
+    // Delay slightly to ensure user has interacted
+    const timer = setTimeout(() => {
+      audio.playOcean();
+      audio.playBGM();
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      audio.stopOcean();
+      audio.stopBGM();
+    };
+  }, []);
+
   const handleLogout = () => {
+    audio.stopOcean();
+    audio.stopBGM();
     logout();
     navigate("/");
   };
 
   const handleUpgradeSuccess = (updatedData) => {
+    audio.playClick();
     setUser((prev) => ({
       ...prev,
       gold: updatedData.gold,
@@ -57,9 +77,17 @@ export default function Game() {
     try {
       setFishing(true);
       setLastCatch(null);
+      
+      // Play cast sound when fishing starts
+      audio.playCast();
+      
       const res = await api.post("/game/fish", { quality });
 
       if (res.data.success) {
+        // Play success and coin sounds
+        audio.playSuccess();
+        setTimeout(() => audio.playCoin(), 300);
+        
         setUser((prev) => ({
           ...prev,
           ...res.data.user,
@@ -147,7 +175,7 @@ export default function Game() {
 
         <div className="relative z-10 flex-1 flex items-center justify-center">
           <div className="text-center">
-            <HoldButton onSuccess={fish} disabled={fishing} />
+            <HoldButton onSuccess={fish} disabled={fishing} audio={audio} />
           </div>
         </div>
 
