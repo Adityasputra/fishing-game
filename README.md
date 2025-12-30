@@ -9,6 +9,14 @@ A real-time multiplayer fishing game built with React and Node.js, featuring an 
 - **Stay in the Safe Zone**: Maintain tension between 40-70% for 3 seconds to catch fish
 - **Skill-Based Rewards**: Better timing = better fish quality (Perfect/Good/Normal)
 - **Progressive Difficulty**: Higher tension requires precise control
+- **Advanced Timing Mechanics**: 
+  - Maximum hold time limit (10 seconds) - release periodically to avoid losing the fish
+  - Maximum release time limit (5 seconds) - maintain engagement to keep the fish hooked
+  - Visual warnings when approaching time limits
+- **Immersive Audio System**: 
+  - Ambient ocean waves and background music
+  - Sound effects for casting, reeling, success, and coin collection
+  - Automatic audio management with browser autoplay compliance
 
 ### 🐟 Fish System
 - **Three Rarity Tiers**: Normal, Rare, Epic
@@ -32,6 +40,8 @@ A real-time multiplayer fishing game built with React and Node.js, featuring an 
 - **Haptic Feedback**: Mobile vibration support for enhanced experience
 - **Responsive Design**: Works on desktop and mobile devices
 - **Visual Feedback**: Progress bars, zone indicators, and animations
+- **Rich Sound Design**: Ocean ambience, background music, and contextual sound effects
+- **Instructions Modal**: In-game tutorial accessible anytime to help new players
 
 ## 🛠️ Tech Stack
 
@@ -153,6 +163,10 @@ The game will be available at `http://localhost:5173`
    - Releasing decreases tension (-1.5% per 100ms)
 3. **Stay in Safe Zone** (40-70%) for 3 seconds to succeed
 4. **Avoid Danger Zone** (90%+) or the fish escapes!
+5. **Watch Time Limits**:
+   - Can't hold continuously for more than 10 seconds (fish escapes)
+   - Can't release for more than 5 seconds (fish escapes)
+   - Visual warnings appear when approaching limits
 
 ### Quality Bonuses
 
@@ -167,10 +181,10 @@ The game will be available at `http://localhost:5173`
 | Level | Normal | Rare | Epic | Upgrade Cost |
 |-------|--------|------|------|-------------|
 | 1     | 80%    | 2%   | 1%   | -           |
-| 2     | 75%    | 4%   | 2%   | 50 gold     |
-| 3     | 70%    | 6%   | 3%   | 100 gold    |
-| 4     | 65%    | 8%   | 4%   | 200 gold    |
-| 5     | 60%    | 10%  | 5%   | 400 gold    |
+| 2     | 75%    | 4%   | 2%   | 10 gold     |
+| 3     | 70%    | 6%   | 3%   | 25 gold     |
+| 4     | 65%    | 8%   | 4%   | 50 gold     |
+| 5     | 60%    | 10%  | 5%   | 100 gold    |
 
 ### Rewards
 
@@ -299,9 +313,10 @@ const rodChances = {
 **Upgrade Costs** (`server/src/services/game.service.js`):
 ```javascript
 const upgradeCost = {
-  1: 50,   // Cost to upgrade from level 1 to 2
-  2: 100,  // Adjust as needed
-  // ...
+  1: 10,   // Cost to upgrade from level 1 to 2
+  2: 25,   // Cost to upgrade from level 2 to 3
+  3: 50,   // Cost to upgrade from level 3 to 4
+  4: 100   // Cost to upgrade from level 4 to 5
 };
 ```
 
@@ -355,9 +370,11 @@ Contributions, issues, and feature requests are welcome!
 - [ ] Friend system and private competitions
 - [ ] Inventory system for caught fish
 - [ ] Tournaments and seasonal events
-- [ ] Sound effects and background music
-- [ ] Mobile app versions
+- [ ] Mobile app versions (iOS/Android)
 - [ ] Social sharing features
+- [ ] More sound effects and music tracks
+- [ ] Fish collection album/gallery
+- [ ] Customizable fishing equipment skins
 
 ## 👨‍💻 Author
 
